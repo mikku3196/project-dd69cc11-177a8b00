@@ -13,6 +13,8 @@ import logging
 
 from ..core.config import config
 from ..core.exceptions import BybitAPIError
+from ..utils.circuit_breaker import circuit_breaker, circuit_breaker_protected
+from ..utils.api_client import KeyRing, RateLimitHandler
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,10 @@ class BybitClient:
             self.base_url = "https://api.bybit.com"
         
         self.session: Optional[aiohttp.ClientSession] = None
+        
+        # キーリングとレート制限ハンドラー
+        self.key_ring = KeyRing([self.api_key])  # 単一キーで初期化
+        self.rate_handler = RateLimitHandler()
     
     async def __aenter__(self):
         """非同期コンテキストマネージャーの開始"""
@@ -136,6 +142,7 @@ class BybitClient:
             requires_auth=True
         )
     
+    @circuit_breaker_protected
     async def place_order(
         self,
         symbol: str,
@@ -146,31 +153,70 @@ class BybitClient:
         stop_loss: Optional[str] = None,
         take_profit: Optional[str] = None
     ) -> Dict[str, Any]:
-        """注文を発注"""
-        params = {
-            'category': 'linear',
-            'symbol': symbol,
-            'side': side,
-            'orderType': order_type,
-            'qty': qty,
-            'timeInForce': 'GTC'
-        }
+        """サーキットブレーカーとキー回転を組み込んだ注文実行"""
+        attempt = 0
+        max_attempts = 5
+        backoff_base = 0.5
         
-        if price:
-            params['price'] = price
+        while attempt < max_attempts:
+            try:
+                params = {
+                    'category': 'linear',
+                    'symbol': symbol,
+                    'side': side,
+                    'orderType': order_type,
+                    'qty': qty,
+                    'timeInForce': 'GTC'
+                }
+                
+                if price:
+                    params['price'] = price
+                
+                if stop_loss:
+                    params['stopLoss'] = stop_loss
+                
+                if take_profit:
+                    params['takeProfit'] = take_profit
+                
+                resp = await self._make_request(
+                    'POST',
+                    '/v5/order/create',
+                    params,
+                    requires_auth=True
+                )
+                
+                # レスポンスのステータスチェック
+                if resp.get('retCode', 0) != 0:
+                    ret_msg = resp.get('retMsg', '').lower()
+                    ret_code = resp.get('retCode')
+                    
+                    # レート制限判定
+                    if 'rate' in ret_msg or ret_code == 429:
+                        logger.warning(f"レート制限検出: {ret_msg}")
+                        # 現在のキーをブラックリストに追加（実際のキー回転は単一キーのため、指数バックオフのみ）
+                        await asyncio.sleep(backoff_base * (2 ** attempt))
+                        attempt += 1
+                        continue
+                    
+                    # その他のエラー
+                    circuit_breaker.record_failure()
+                    raise BybitAPIError(f"注文拒否: {resp}")
+                
+                # 正常
+                circuit_breaker.record_success()
+                return resp
+                
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    logger.warning(f"注文失敗 (試行 {attempt + 1}/{max_attempts}): {e}")
+                    await asyncio.sleep(backoff_base * (2 ** attempt))
+                    attempt += 1
+                    continue
+                else:
+                    circuit_breaker.record_failure()
+                    raise
         
-        if stop_loss:
-            params['stopLoss'] = stop_loss
-        
-        if take_profit:
-            params['takeProfit'] = take_profit
-        
-        return await self._make_request(
-            'POST',
-            '/v5/order/create',
-            params,
-            requires_auth=True
-        )
+        raise BybitAPIError("最大リトライ回数を超過しました")
     
     async def cancel_order(self, symbol: str, order_id: str) -> Dict[str, Any]:
         """注文をキャンセル"""

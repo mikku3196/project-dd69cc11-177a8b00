@@ -1,0 +1,37 @@
+# 自己進化型AIポートフォリオ自動売買システム - 軽量本番用依存関係
+# コンパイル不要のパッケージのみ使用
+
+# Web Framework & API
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy
+alembic
+aiosqlite
+
+# HTTP Client
+aiohttp
+httpx
+
+# AI Integration
+google-generativeai
+
+# Task Scheduling
+apscheduler
+
+# Monitoring & Logging
+structlog
+
+# Development & Testing
+pytest
+pytest-asyncio
+
+# Utilities
+python-dotenv
+pyyaml
+
+# Security
+cryptography

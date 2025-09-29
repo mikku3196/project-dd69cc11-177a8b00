@@ -1,0 +1,43 @@
+# 自己進化型AIポートフォリオ自動売買システム - 本番用依存関係
+# 最小構成で安定動作を保証
+
+# Web Framework & API
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.1
+aiosqlite==0.19.0
+
+# HTTP Client
+aiohttp==3.9.1
+httpx==0.25.2
+
+# AI Integration
+google-generativeai==0.3.2
+
+# Task Scheduling
+apscheduler==3.10.4
+
+# Data Processing (最小構成)
+numpy==1.24.3
+
+# Monitoring & Logging
+structlog==23.2.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+
+# Security
+cryptography==41.0.7
+
+# Production WSGI Server
+gunicorn==21.2.0
