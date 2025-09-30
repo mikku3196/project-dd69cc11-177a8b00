@@ -43,3 +43,7 @@ mypy==1.7.1
 python-dotenv==1.0.0
 pyyaml==6.0.1
 schedule==1.2.0
+
+# Additional Dependencies for New Features
+feedparser==6.0.12
+sgmllib3k==1.0.0

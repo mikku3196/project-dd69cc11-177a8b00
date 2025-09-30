@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  paper-trading:
+    build: .
+    container_name: paper-trading-bot
+    restart: unless-stopped
+    environment:
+      - PYTHONUTF8=1
+      - LOG_LEVEL=INFO
+      - BYBIT_TESTNET=true
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config.json:/app/config.json
+      - ./.env:/app/.env
+    ports:
+      - "8000:8000"
+    command: ["./scripts/setup_and_run.sh", "quick"]
+    
+  # フルテスト用サービス
+  paper-trading-full:
+    build: .
+    container_name: paper-trading-full
+    restart: unless-stopped
+    environment:
+      - PYTHONUTF8=1
+      - LOG_LEVEL=INFO
+      - BYBIT_TESTNET=true
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./config.json:/app/config.json
+      - ./.env:/app/.env
+    ports:
+      - "8001:8000"
+    command: ["./scripts/setup_and_run.sh", "full"]
+    
+  # 監視用サービス
+  monitoring:
+    build: .
+    container_name: paper-trading-monitoring
+    restart: unless-stopped
+    environment:
+      - PYTHONUTF8=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    ports:
+      - "8002:8000"
+    command: ["python", "scripts/start_monitoring_server.py"]

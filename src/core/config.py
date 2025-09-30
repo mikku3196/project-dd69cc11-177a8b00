@@ -6,7 +6,8 @@ import json
 import os
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,8 +26,8 @@ class SystemConfig(BaseSettings):
 
 class BybitConfig(BaseSettings):
     """Bybit API設定"""
-    api_key: str = Field(..., env="BYBIT_API_KEY")
-    secret_key: str = Field(..., env="BYBIT_SECRET_KEY")
+    api_key: str = Field("TEST_API_KEY", env="BYBIT_API_KEY")
+    secret_key: str = Field("TEST_SECRET_KEY", env="BYBIT_SECRET_KEY")
     testnet: bool = Field(True, env="BYBIT_TESTNET")
     rate_limit: int = 120
     timeout: int = 30

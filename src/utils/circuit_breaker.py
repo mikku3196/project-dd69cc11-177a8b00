@@ -119,6 +119,10 @@ class CircuitBreaker:
             "is_open": self.is_open()
         }
     
+    def get_status(self) -> Dict[str, Any]:
+        """監視用の状態情報を取得（get_state_infoのエイリアス）"""
+        return self.get_state_info()
+    
     def reset(self) -> None:
         """サーキットブレーカーをリセット"""
         self.fail_times.clear()

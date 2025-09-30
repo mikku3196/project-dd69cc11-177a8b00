@@ -126,9 +126,19 @@ logs/
 *.sqlite
 *.sqlite3
 config.json
+config/api_config.yaml
 .env
 .env.local
 .env.production
+env.production
+config_testnet.json
+
+# APIキーとシークレット
+**/api_keys.txt
+**/secrets.txt
+**/credentials.json
+**/config_production.yaml
+**/config_production.json
 
 # IDE
 .vscode/

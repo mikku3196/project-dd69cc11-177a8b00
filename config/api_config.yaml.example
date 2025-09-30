@@ -1,0 +1,64 @@
+# AI Trading Bot - API設定ファイル
+# このファイルをコピーして config/api_config.yaml として保存し、実際の値を設定してください
+
+# Bybit API設定
+bybit:
+  api_key: "YOUR_BYBIT_API_KEY_HERE"  # Bybit APIキー
+  api_secret: "YOUR_BYBIT_API_SECRET_HERE"  # Bybit APIシークレット
+  testnet: true  # テストネット使用 (本番運用時は false)
+  base_url: "https://api-testnet.bybit.com"  # テストネットURL (本番: "https://api.bybit.com")
+
+# Gemini AI API設定 (センチメント分析用)
+gemini:
+  api_key: "YOUR_GEMINI_API_KEY_HERE"  # Gemini AI APIキー
+  model: "gemini-1.5-flash"  # 使用するモデル
+  endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"  # APIエンドポイント
+
+# Discord Webhook設定
+discord:
+  webhook_url: "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"  # Discord Webhook URL
+  enabled: true  # Discord通知を有効にするか
+  notification_levels:  # 通知するログレベル
+    - "ERROR"
+    - "CRITICAL"
+    - "WARNING"
+
+# Webダッシュボード設定
+dashboard:
+  host: "0.0.0.0"  # ダッシュボードのホスト
+  port: 8000  # ダッシュボードのポート
+  debug: false  # デバッグモード
+  cors_origins: ["http://localhost:3000"]  # CORS許可オリジン
+  api_key: "YOUR_DASHBOARD_API_KEY"  # ダッシュボードAPIキー
+
+# ニュースAPI設定
+news:
+  sources:  # ニュースソース
+    - "https://news.google.com/rss/search?q=bitcoin&hl=en-US&gl=US&ceid=US:en"
+  keywords:  # 監視キーワード
+    - "Bitcoin"
+    - "BTC"
+    - "crypto"
+  fetch_interval_minutes: 15  # ニュース取得間隔（分）
+
+# 取引設定
+trading:
+  symbols:  # 取引対象シンボル
+    - "BTCUSDT"
+    - "ETHUSDT"
+  base_lot_size: 0.01  # ベースロットサイズ
+  max_positions: 3  # 最大ポジション数
+  risk_per_trade: 0.02  # 1トレードあたりのリスク（2%）
+
+# リスク管理設定
+risk_management:
+  max_drawdown: 0.15  # 最大ドローダウン（15%）
+  daily_loss_limit: 0.05  # 日次損失制限（5%）
+  circuit_breaker_threshold: 5  # サーキットブレーカー閾値
+
+# ログ設定
+logging:
+  level: "INFO"  # ログレベル
+  file: "logs/trading_bot.log"  # ログファイル
+  max_size: "10MB"  # ログファイル最大サイズ
+  backup_count: 5  # バックアップファイル数
