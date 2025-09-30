@@ -3,7 +3,7 @@
 SQLAlchemyエンジンとセッション管理
 """
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.pool import StaticPool
@@ -79,6 +79,12 @@ def create_tables():
         from src.models.tables import Base
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
+        
+        # 作成されたテーブル一覧をログ出力
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        logger.info(f"Created tables: {', '.join(tables)}")
+        
     except Exception as e:
         logger.error(f"Failed to create tables: {e}")
         raise
@@ -97,7 +103,8 @@ def check_database_connection():
     """データベース接続を確認"""
     try:
         with engine.connect() as connection:
-            result = connection.execute("SELECT 1")
+            from sqlalchemy import text
+            result = connection.execute(text("SELECT 1"))
             logger.info("Database connection successful")
             return True
     except Exception as e:

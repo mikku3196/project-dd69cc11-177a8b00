@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 データベースモデルのテストスクリプト
 テーブル作成と基本的なCRUD操作をテスト
@@ -20,43 +21,43 @@ from src.models.tables import (
 
 def test_database_connection():
     """データベース接続テスト"""
-    print("🔗 データベース接続テスト")
+    print("データベース接続テスト")
     print("=" * 40)
     
     try:
         # データベース初期化
         init_database()
-        print("✅ データベース接続成功")
+        print("OK データベース接続成功")
         return True
     except Exception as e:
-        print(f"❌ データベース接続失敗: {e}")
+        print(f"NG データベース接続失敗: {e}")
         return False
 
 def test_table_creation():
     """テーブル作成テスト"""
-    print("\n📊 テーブル作成テスト")
+    print("\nテーブル作成テスト")
     print("=" * 40)
     
     try:
         # テーブル作成
         from src.models.tables import Base
         Base.metadata.create_all(bind=engine)
-        print("✅ 全テーブル作成成功")
+        print("OK 全テーブル作成成功")
         return True
     except Exception as e:
-        print(f"❌ テーブル作成失敗: {e}")
+        print(f"NG テーブル作成失敗: {e}")
         return False
 
 def test_crud_operations():
     """CRUD操作テスト"""
-    print("\n🔄 CRUD操作テスト")
+    print("\nCRUD操作テスト")
     print("=" * 40)
     
     try:
         db = next(get_db())
         
         # Tradeテーブルのテスト
-        print("📈 Tradeテーブルテスト")
+        print("Tradeテーブルテスト")
         trade = Trade(
             sub_bot_name="SubBot-A",
             symbol="BTCUSDT",
@@ -69,10 +70,10 @@ def test_crud_operations():
         )
         db.add(trade)
         db.commit()
-        print("✅ Trade作成成功")
+        print("OK Trade作成成功")
         
         # PortfolioHistoryテーブルのテスト
-        print("💰 PortfolioHistoryテーブルテスト")
+        print("PortfolioHistoryテーブルテスト")
         portfolio = PortfolioHistory(
             total_balance_usdt=Decimal("10000.00"),
             sub_bot_a_balance=Decimal("4000.00"),
@@ -82,10 +83,10 @@ def test_crud_operations():
         )
         db.add(portfolio)
         db.commit()
-        print("✅ PortfolioHistory作成成功")
+        print("OK PortfolioHistory作成成功")
         
         # SentimentScoreテーブルのテスト
-        print("📰 SentimentScoreテーブルテスト")
+        print("SentimentScoreテーブルテスト")
         sentiment = SentimentScore(
             source="https://news.google.com/rss/search?q=bitcoin",
             keyword="Bitcoin",
@@ -95,10 +96,10 @@ def test_crud_operations():
         )
         db.add(sentiment)
         db.commit()
-        print("✅ SentimentScore作成成功")
+        print("OK SentimentScore作成成功")
         
         # SystemEventテーブルのテスト
-        print("⚙️ SystemEventテーブルテスト")
+        print("SystemEventテーブルテスト")
         event = SystemEvent(
             level="INFO",
             event_type="STARTUP",
@@ -107,10 +108,10 @@ def test_crud_operations():
         )
         db.add(event)
         db.commit()
-        print("✅ SystemEvent作成成功")
+        print("OK SystemEvent作成成功")
         
         # BotPerformanceテーブルのテスト
-        print("🤖 BotPerformanceテーブルテスト")
+        print("BotPerformanceテーブルテスト")
         performance = BotPerformance(
             bot_name="SubBot-A",
             balance=Decimal("4000.00"),
@@ -122,10 +123,10 @@ def test_crud_operations():
         )
         db.add(performance)
         db.commit()
-        print("✅ BotPerformance作成成功")
+        print("OK BotPerformance作成成功")
         
         # MarketPhaseテーブルのテスト
-        print("📊 MarketPhaseテーブルテスト")
+        print("MarketPhaseテーブルテスト")
         market_phase = MarketPhase(
             phase="strong_bull",
             confidence=Decimal("0.85"),
@@ -134,10 +135,10 @@ def test_crud_operations():
         )
         db.add(market_phase)
         db.commit()
-        print("✅ MarketPhase作成成功")
+        print("OK MarketPhase作成成功")
         
         # ParameterOptimizationテーブルのテスト
-        print("🔧 ParameterOptimizationテーブルテスト")
+        print("ParameterOptimizationテーブルテスト")
         optimization = ParameterOptimization(
             bot_name="SubBot-A",
             parameter_name="sl_ratio",
@@ -148,10 +149,10 @@ def test_crud_operations():
         )
         db.add(optimization)
         db.commit()
-        print("✅ ParameterOptimization作成成功")
+        print("OK ParameterOptimization作成成功")
         
         # CircuitBreakerテーブルのテスト
-        print("🚨 CircuitBreakerテーブルテスト")
+        print("CircuitBreakerテーブルテスト")
         circuit_breaker = CircuitBreaker(
             bot_name="SubBot-A",
             trigger_reason="Daily loss limit exceeded",
@@ -160,10 +161,10 @@ def test_crud_operations():
         )
         db.add(circuit_breaker)
         db.commit()
-        print("✅ CircuitBreaker作成成功")
+        print("OK CircuitBreaker作成成功")
         
         # NewsArticleテーブルのテスト
-        print("📰 NewsArticleテーブルテスト")
+        print("NewsArticleテーブルテスト")
         article = NewsArticle(
             title="Bitcoin reaches new all-time high",
             url="https://example.com/bitcoin-news",
@@ -173,10 +174,10 @@ def test_crud_operations():
         )
         db.add(article)
         db.commit()
-        print("✅ NewsArticle作成成功")
+        print("OK NewsArticle作成成功")
         
         # Alertテーブルのテスト
-        print("🚨 Alertテーブルテスト")
+        print("Alertテーブルテスト")
         alert = Alert(
             alert_type="TRADE",
             severity="HIGH",
@@ -187,28 +188,28 @@ def test_crud_operations():
         )
         db.add(alert)
         db.commit()
-        print("✅ Alert作成成功")
+        print("OK Alert作成成功")
         
         # データ読み取りテスト
-        print("\n📖 データ読み取りテスト")
+        print("\nデータ読み取りテスト")
         trades = db.query(Trade).all()
         portfolios = db.query(PortfolioHistory).all()
         sentiments = db.query(SentimentScore).all()
         
-        print(f"✅ Tradeレコード数: {len(trades)}")
-        print(f"✅ PortfolioHistoryレコード数: {len(portfolios)}")
-        print(f"✅ SentimentScoreレコード数: {len(sentiments)}")
+        print(f"OK Tradeレコード数: {len(trades)}")
+        print(f"OK PortfolioHistoryレコード数: {len(portfolios)}")
+        print(f"OK SentimentScoreレコード数: {len(sentiments)}")
         
         db.close()
         return True
         
     except Exception as e:
-        print(f"❌ CRUD操作テスト失敗: {e}")
+        print(f"NG CRUD操作テスト失敗: {e}")
         return False
 
 def test_data_validation():
     """データ検証テスト"""
-    print("\n🔍 データ検証テスト")
+    print("\nデータ検証テスト")
     print("=" * 40)
     
     try:
@@ -217,28 +218,28 @@ def test_data_validation():
         # 重複チェック
         existing_trade = db.query(Trade).filter(Trade.order_id == "TEST_ORDER_001").first()
         if existing_trade:
-            print("✅ 重複チェック成功: 既存レコード発見")
+            print("OK 重複チェック成功: 既存レコード発見")
         
         # データ型チェック
         trade = db.query(Trade).first()
         if trade and isinstance(trade.price, Decimal):
-            print("✅ データ型チェック成功: Decimal型確認")
+            print("OK データ型チェック成功: Decimal型確認")
         
         # インデックスチェック
         trades_by_symbol = db.query(Trade).filter(Trade.symbol == "BTCUSDT").all()
         if trades_by_symbol:
-            print("✅ インデックスチェック成功: シンボル検索")
+            print("OK インデックスチェック成功: シンボル検索")
         
         db.close()
         return True
         
     except Exception as e:
-        print(f"❌ データ検証テスト失敗: {e}")
+        print(f"NG データ検証テスト失敗: {e}")
         return False
 
 def main():
     """メイン処理"""
-    print("🗄️ データベースモデルテスト")
+    print("データベースモデルテスト")
     print("=" * 50)
     
     tests = [
@@ -256,19 +257,19 @@ def main():
             if test():
                 passed += 1
         except Exception as e:
-            print(f"❌ テストエラー: {e}")
+            print(f"NG テストエラー: {e}")
     
-    print("\n📊 テスト結果")
+    print("\nテスト結果")
     print("=" * 50)
-    print(f"✅ 成功: {passed}/{total}")
-    print(f"❌ 失敗: {total - passed}/{total}")
+    print(f"OK 成功: {passed}/{total}")
+    print(f"NG 失敗: {total - passed}/{total}")
     
     if passed == total:
-        print("\n🎉 すべてのテストが成功しました！")
-        print("✅ データベースモデルが正常に動作しています")
+        print("\nすべてのテストが成功しました！")
+        print("OK データベースモデルが正常に動作しています")
         return True
     else:
-        print("\n⚠️ 一部のテストが失敗しました")
+        print("\n一部のテストが失敗しました")
         return False
 
 if __name__ == "__main__":

@@ -2,8 +2,9 @@
 データベースモデル定義
 SQLAlchemyを使用してテーブル構造を定義
 """
-from sqlalchemy import Column, Integer, String, DateTime, Decimal, Text, JSON, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Boolean, ForeignKey, Numeric
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
@@ -15,15 +16,15 @@ class Trade(Base):
     __tablename__ = 'trades'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime, default=func.now(), nullable=False)
+    timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     sub_bot_name = Column(String(50), nullable=False, index=True)
     symbol = Column(String(20), nullable=False, index=True)
     order_id = Column(String(100), unique=True, nullable=False, index=True)
     side = Column(String(10), nullable=False)  # 'BUY' or 'SELL'
-    price = Column(Decimal(20, 8), nullable=False)
-    quantity = Column(Decimal(20, 8), nullable=False)
-    fee = Column(Decimal(20, 8), default=0)
-    pnl = Column(Decimal(20, 8), default=0)
+    price = Column(Numeric(20, 8), nullable=False)
+    quantity = Column(Numeric(20, 8), nullable=False)
+    fee = Column(Numeric(20, 8), default=0)
+    pnl = Column(Numeric(20, 8), default=0)
     entry_reason = Column(Text)  # Geminiの分析結果
     exit_reason = Column(Text)   # 決済理由
     status = Column(String(20), default='OPEN')  # 'OPEN', 'CLOSED', 'CANCELLED'
@@ -39,13 +40,13 @@ class PortfolioHistory(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
-    total_balance_usdt = Column(Decimal(20, 8), nullable=False)
-    sub_bot_a_balance = Column(Decimal(20, 8), default=0)
-    sub_bot_b_balance = Column(Decimal(20, 8), default=0)
-    sub_bot_c_balance = Column(Decimal(20, 8), default=0)
-    profit_saved_balance = Column(Decimal(20, 8), default=0)
-    total_pnl = Column(Decimal(20, 8), default=0)
-    daily_pnl = Column(Decimal(20, 8), default=0)
+    total_balance_usdt = Column(Numeric(20, 8), nullable=False)
+    sub_bot_a_balance = Column(Numeric(20, 8), default=0)
+    sub_bot_b_balance = Column(Numeric(20, 8), default=0)
+    sub_bot_c_balance = Column(Numeric(20, 8), default=0)
+    profit_saved_balance = Column(Numeric(20, 8), default=0)
+    total_pnl = Column(Numeric(20, 8), default=0)
+    daily_pnl = Column(Numeric(20, 8), default=0)
     created_at = Column(DateTime, default=func.now())
     
     def __repr__(self):
@@ -59,10 +60,10 @@ class SentimentScore(Base):
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     source = Column(String(500), nullable=False)  # ニュースソースURL
     keyword = Column(String(100), nullable=False, index=True)
-    score = Column(Decimal(5, 4), nullable=False)  # -1.0 to 1.0
+    score = Column(Numeric(5, 4), nullable=False)  # -1.0 to 1.0
     headline = Column(Text)
     article_url = Column(String(1000))
-    confidence = Column(Decimal(5, 4), default=0.5)  # 信頼度
+    confidence = Column(Numeric(5, 4), default=0.5)  # 信頼度
     created_at = Column(DateTime, default=func.now())
     
     def __repr__(self):
@@ -91,16 +92,16 @@ class BotPerformance(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     bot_name = Column(String(50), nullable=False, index=True)
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
-    balance = Column(Decimal(20, 8), nullable=False)
-    total_pnl = Column(Decimal(20, 8), default=0)
-    daily_pnl = Column(Decimal(20, 8), default=0)
-    win_rate = Column(Decimal(5, 4), default=0)  # 勝率
+    balance = Column(Numeric(20, 8), nullable=False)
+    total_pnl = Column(Numeric(20, 8), default=0)
+    daily_pnl = Column(Numeric(20, 8), default=0)
+    win_rate = Column(Numeric(5, 4), default=0)  # 勝率
     total_trades = Column(Integer, default=0)
     winning_trades = Column(Integer, default=0)
     losing_trades = Column(Integer, default=0)
-    max_drawdown = Column(Decimal(5, 4), default=0)
-    sharpe_ratio = Column(Decimal(10, 6), default=0)
-    profit_factor = Column(Decimal(10, 6), default=0)
+    max_drawdown = Column(Numeric(5, 4), default=0)
+    sharpe_ratio = Column(Numeric(10, 6), default=0)
+    profit_factor = Column(Numeric(10, 6), default=0)
     created_at = Column(DateTime, default=func.now())
     
     def __repr__(self):
@@ -113,10 +114,10 @@ class MarketPhase(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     phase = Column(String(20), nullable=False, index=True)  # 'strong_bull', 'weak_bull', 'ranging', 'weak_bear', 'strong_bear'
-    confidence = Column(Decimal(5, 4), nullable=False)  # 信頼度
-    trend_strength = Column(Decimal(10, 6), default=0)
-    volatility = Column(Decimal(10, 6), default=0)
-    indicator_value = Column(Decimal(20, 8))  # 指標値
+    confidence = Column(Numeric(5, 4), nullable=False)  # 信頼度
+    trend_strength = Column(Numeric(10, 6), default=0)
+    volatility = Column(Numeric(10, 6), default=0)
+    indicator_value = Column(Numeric(20, 8))  # 指標値
     created_at = Column(DateTime, default=func.now())
     
     def __repr__(self):
@@ -132,8 +133,8 @@ class ParameterOptimization(Base):
     parameter_name = Column(String(100), nullable=False)
     old_value = Column(String(100))
     new_value = Column(String(100), nullable=False)
-    improvement_percentage = Column(Decimal(10, 6), default=0)
-    backtest_score = Column(Decimal(10, 6), default=0)
+    improvement_percentage = Column(Numeric(10, 6), default=0)
+    backtest_score = Column(Numeric(10, 6), default=0)
     optimization_method = Column(String(50), default='grid_search')
     status = Column(String(20), default='SUCCESS')  # 'SUCCESS', 'FAILED', 'SKIPPED'
     created_at = Column(DateTime, default=func.now())
@@ -149,8 +150,8 @@ class CircuitBreaker(Base):
     timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     bot_name = Column(String(50), nullable=False, index=True)
     trigger_reason = Column(String(200), nullable=False)
-    threshold_value = Column(Decimal(20, 8))
-    current_value = Column(Decimal(20, 8))
+    threshold_value = Column(Numeric(20, 8))
+    current_value = Column(Numeric(20, 8))
     status = Column(String(20), default='ACTIVE')  # 'ACTIVE', 'RESOLVED', 'MANUAL_RESET'
     duration_minutes = Column(Integer, default=0)
     resolved_at = Column(DateTime)
@@ -170,9 +171,9 @@ class NewsArticle(Base):
     source = Column(String(200), nullable=False)
     published_date = Column(DateTime)
     content = Column(Text)
-    sentiment_score = Column(Decimal(5, 4))
+    sentiment_score = Column(Numeric(5, 4))
     keywords = Column(JSON)  # 関連キーワード
-    relevance_score = Column(Decimal(5, 4), default=0)
+    relevance_score = Column(Numeric(5, 4), default=0)
     created_at = Column(DateTime, default=func.now())
     
     def __repr__(self):

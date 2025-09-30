@@ -3,15 +3,16 @@
 """
 
 from .config import ConfigManager, config
-from .database import DatabaseManager, db_manager, Base
+from .database import init_database, get_db, engine, Base
 from .logger import setup_logging, get_logger, TradingLogger, PerformanceLogger, SystemLogger
 from .exceptions import *
 
 __all__ = [
     "ConfigManager",
     "config",
-    "DatabaseManager", 
-    "db_manager",
+    "init_database",
+    "get_db", 
+    "engine",
     "Base",
     "setup_logging",
     "get_logger",
