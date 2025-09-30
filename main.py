@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db
+from app.bots.master_bot import master_bot # マスターボットをインポート
 
 # ----------------------------------------------------
-# アプリケーションのライフサイクル管理 (Lifespan)
+# アプリケーションのライフサイクル管理 (Lifspans)
 # ----------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,13 +14,16 @@ async def lifespan(app: FastAPI):
     print("Initializing application...")
     # データベースの初期化（テーブル作成）
     init_db()
-    # 他の初期化処理 (例: ボットの起動) はここに追加
+    # マスターボットを通じてすべてのボットを開始
+    master_bot.start_all_bots()
     print("Application has been initialized and is ready.")
     
     yield  # ここでアプリケーションが稼働状態になる
     
     # アプリケーション終了時に実行される処理
     print("Application shutdown...")
+    # マスターボットを通じてすべてのボットを停止
+    master_bot.stop_all_bots()
 
 
 # FastAPIアプリケーションインスタンスを作成
@@ -27,7 +31,7 @@ app = FastAPI(
     title="Self-Evolving AI Trading System",
     description="A fully autonomous asset management ecosystem.",
     version="1.0.0",
-    lifespan=lifespan  # 新しいlifespanイベントハンドラを登録
+    lifespan=lifespan
 )
 
 
@@ -41,7 +45,8 @@ async def root():
         "message": "AI Trading System is running.",
         "environment": settings.general.get('environment'),
         "database_type": settings.database.get('db_type'),
-        "system_status": "OK"
+        "system_status": "OK",
+        "running_bots": [bot.name for bot in master_bot.sub_bots if bot.is_running]
     }
 
 # このファイルが直接実行された場合のサーバー起動処理
