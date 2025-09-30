@@ -1,0 +1,82 @@
+# config.toml
+
+# --- グローバル設定 ---
+[general]
+environment = "development"  # "development", "testnet", "production"
+debug_mode = true
+timezone = "UTC"
+
+# --- データベース設定 ---
+[database]
+db_type = "sqlite" # "sqlite" or "postgresql"
+# SQLiteの場合のファイルパス (開発用)
+db_url_sqlite = "sqlite:///./data/trading_bot.db"
+
+# --- マスターボット設定 ---
+[master_bot]
+rebalance_interval_hours = 4
+profit_save_day = "Sunday"    # 利益確保を実行する曜日
+profit_save_hour = 0          # 実行時刻 (UTC)
+profit_save_rate = 0.5        # 利益の50%を確保
+
+# 市場フェーズの定義 (インジケーターと閾値)
+[master_bot.market_phase]
+indicator = "EMA_Cross" # 'EMA_Cross', 'ADX'など
+short_period = 50
+long_period = 200
+# 各フェーズにおけるサブボットへの資金配分比率
+[master_bot.allocations]
+strong_bull = { sub_bot_A = 0.2, sub_bot_B = 0.3, sub_bot_C = 0.5 }
+weak_bull   = { sub_bot_A = 0.3, sub_bot_B = 0.4, sub_bot_C = 0.3 }
+ranging     = { sub_bot_A = 0.5, sub_bot_B = 0.3, sub_bot_C = 0.2 }
+weak_bear   = { sub_bot_A = 0.3, sub_bot_B = 0.4, sub_bot_C = 0.3 }
+strong_bear = { sub_bot_A = 0.2, sub_bot_B = 0.3, sub_bot_C = 0.5 }
+
+# --- サブボット設定 (リスト形式で複数定義可能) ---
+[[sub_bots]]
+name = "SubBot-A (Stable)"
+enabled = true
+symbol = "BTC/USDT"
+base_lot = 0.001
+# 動的ポジションサイジング設定
+[sub_bots.dynamic_sizing]
+enabled = true
+volatility_indicator = "ATR"
+atr_period = 14
+# ボラティリティの閾値 (ATR値)
+volatility_thresholds = { low = 100.0, medium = 300.0 }
+# 各閾値でのロット倍率
+sizing_multipliers = { low = 1.0, medium = 0.75, high = 0.5 }
+# 段階的エントリー設定
+[sub_bots.split_entry]
+enabled = true
+count = 3
+method = "time" # 'time' or 'price'
+interval_seconds = 60
+# その他戦略パラメータ
+[sub_bots.strategy_params]
+tp_ratio = 1.5 # リスクリワード比
+sl_ratio = 1.0
+
+# --- (以下、SubBot-B, SubBot-C と続く) ---
+
+# --- ニュース・センチメント分析設定 ---
+[news_sentiment]
+enabled = true
+fetch_interval_minutes = 15
+keywords = ["Bitcoin", "BTC", "crypto", "FOMC", "inflation"]
+sources = [
+    "https://news.google.com/rss/search?q=bitcoin&hl=en-US&gl=US&ceid=US:en"
+]
+moving_average_period_hours = 24
+
+# --- 学習・最適化エンジン設定 ---
+[optimizer]
+auto_tuning_enabled = false # 開発中は無効化
+schedule = "0 1 1 * *" # 毎月1日 AM1:00 に実行 (cron形式)
+backtest_period_months = 6
+target_metric = "sharpe_ratio" # 'profit', 'sharpe_ratio', 'max_drawdown'
+# 最適化対象のパラメータ範囲
+[optimizer.param_ranges]
+"SubBot-A.strategy_params.sl_ratio" = { start = 0.5, end = 2.0, step = 0.1 }
+"SubBot-C.dynamic_sizing.atr_period" = { start = 10, end = 30, step = 2 }
