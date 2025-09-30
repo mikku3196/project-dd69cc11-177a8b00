@@ -24,7 +24,10 @@ class Settings:
     # config.tomlを読み込む
     def __init__(self, config_path: Path = CONFIG_PATH):
         try:
-            with open(config_path, "r") as f:
+            # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            # 修正点: encoding="utf-8" を追加
+            # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+            with open(config_path, "r", encoding="utf-8") as f:
                 self.toml_config = toml.load(f)
         except FileNotFoundError:
             print(f"Warning: {config_path} not found. Using default settings.")
