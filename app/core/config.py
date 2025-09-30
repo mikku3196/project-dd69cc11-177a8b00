@@ -2,9 +2,16 @@ import os
 import toml
 from dotenv import load_dotenv
 from typing import List
+from pathlib import Path
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
+
+# プロジェクトのルートディレクトリを基準に設定ファイルを読み込む
+# このファイル (config.py) の2階層上がプロジェクトルートになる
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+CONFIG_PATH = ROOT_DIR / "config.toml"
+
 
 class Settings:
     # .envから読み込む設定
@@ -15,7 +22,7 @@ class Settings:
     DATABASE_URL: str = os.getenv("DATABASE_URL")
 
     # config.tomlを読み込む
-    def __init__(self, config_path: str = "config.toml"):
+    def __init__(self, config_path: Path = CONFIG_PATH):
         try:
             with open(config_path, "r") as f:
                 self.toml_config = toml.load(f)
@@ -35,7 +42,5 @@ class Settings:
     def master_bot(self):
         return self.toml_config.get("master_bot", {})
     
-    # ... 他のセクションも同様にプロパティとして定義 ...
-
 # シングルトンインスタンスとして設定をロード
 settings = Settings()
