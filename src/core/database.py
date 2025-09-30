@@ -1,199 +1,127 @@
 """
-自己進化型AIポートフォリオ自動売買システム - データベース管理モジュール
+データベース接続設定
+SQLAlchemyエンジンとセッション管理
 """
-
-import asyncio
-from typing import AsyncGenerator, Optional
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, DateTime, Float, Integer, Boolean, Text, JSON
-from datetime import datetime
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.pool import StaticPool
 import logging
-
-from .config import config
+from typing import Generator
 
 logger = logging.getLogger(__name__)
 
+# データベースURL設定
+DATABASE_URL = os.getenv(
+    'DATABASE_URL', 
+    'sqlite:///./data/trading_bot.db'
+)
 
-class Base(DeclarativeBase):
-    """データベースベースクラス"""
-    pass
-
-
-class DatabaseManager:
-    """データベース管理クラス"""
-    
-    def __init__(self):
-        self.engine = None
-        self.session_factory = None
-        self._initialized = False
-    
-    async def initialize(self) -> None:
-        """データベースを初期化"""
-        try:
-            # データベースURLを取得
-            db_url = config.database.url
-            
-            # SQLiteの場合、非同期対応のURLに変換
-            if db_url.startswith("sqlite:///"):
-                db_url = db_url.replace("sqlite:///", "sqlite+aiosqlite:///")
-            
-            # エンジンを作成
-            self.engine = create_async_engine(
-                db_url,
-                echo=config.database.echo,
-                pool_size=config.database.pool_size,
-                max_overflow=config.database.max_overflow,
-                future=True
+# SQLAlchemyエンジン作成
+def create_database_engine():
+    """データベースエンジンを作成"""
+    try:
+        if DATABASE_URL.startswith('sqlite'):
+            # SQLite用設定
+            engine = create_engine(
+                DATABASE_URL,
+                echo=False,
+                poolclass=StaticPool,
+                connect_args={
+                    "check_same_thread": False,
+                    "timeout": 30
+                }
             )
-            
-            # セッションファクトリーを作成
-            self.session_factory = async_sessionmaker(
-                self.engine,
-                class_=AsyncSession,
-                expire_on_commit=False
+        else:
+            # PostgreSQL用設定
+            engine = create_engine(
+                DATABASE_URL,
+                echo=False,
+                pool_size=10,
+                max_overflow=20,
+                pool_timeout=30,
+                pool_recycle=3600
             )
-            
-            # テーブルを作成
-            async with self.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            
-            self._initialized = True
-            logger.info("データベースが正常に初期化されました")
-            
-        except Exception as e:
-            logger.error(f"データベースの初期化に失敗しました: {e}")
-            raise
-    
-    async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
-        """データベースセッションを取得"""
-        if not self._initialized:
-            await self.initialize()
         
-        async with self.session_factory() as session:
-            try:
-                yield session
-            except Exception as e:
-                await session.rollback()
-                logger.error(f"データベースセッションエラー: {e}")
-                raise
-            finally:
-                await session.close()
-    
-    async def close(self) -> None:
-        """データベース接続を閉じる"""
-        if self.engine:
-            await self.engine.dispose()
-            logger.info("データベース接続を閉じました")
+        logger.info(f"Database engine created: {DATABASE_URL.split('@')[-1] if '@' in DATABASE_URL else DATABASE_URL}")
+        return engine
+        
+    except Exception as e:
+        logger.error(f"Failed to create database engine: {e}")
+        raise
 
+# エンジン作成
+engine = create_database_engine()
 
-# グローバルデータベースマネージャー
-db_manager = DatabaseManager()
+# セッションメーカー作成
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Baseクラス
+Base = declarative_base()
 
-# データベースモデルの定義
-class Account(Base):
-    """アカウント情報"""
-    __tablename__ = "accounts"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    bot_type: Mapped[str] = mapped_column(String(50), nullable=False)  # conservative, balanced, aggressive
-    balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    allocated_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+def get_db() -> Generator[Session, None, None]:
+    """データベースセッションを取得（依存性注入用）"""
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception as e:
+        logger.error(f"Database session error: {e}")
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
+def create_tables():
+    """テーブルを作成"""
+    try:
+        # テーブル作成
+        from src.models.tables import Base
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create tables: {e}")
+        raise
 
-class Trade(Base):
-    """取引履歴"""
-    __tablename__ = "trades"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    symbol: Mapped[str] = mapped_column(String(20), nullable=False)
-    side: Mapped[str] = mapped_column(String(10), nullable=False)  # BUY, SELL
-    quantity: Mapped[float] = mapped_column(Float, nullable=False)
-    price: Mapped[float] = mapped_column(Float, nullable=False)
-    fee: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
-    pnl: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    strategy: Mapped[str] = mapped_column(String(50), nullable=False)
-    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+def drop_tables():
+    """テーブルを削除（開発・テスト用）"""
+    try:
+        from src.models.tables import Base
+        Base.metadata.drop_all(bind=engine)
+        logger.warning("All database tables dropped")
+    except Exception as e:
+        logger.error(f"Failed to drop tables: {e}")
+        raise
 
+def check_database_connection():
+    """データベース接続を確認"""
+    try:
+        with engine.connect() as connection:
+            result = connection.execute("SELECT 1")
+            logger.info("Database connection successful")
+            return True
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        return False
 
-class MarketData(Base):
-    """市場データ"""
-    __tablename__ = "market_data"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    symbol: Mapped[str] = mapped_column(String(20), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    open_price: Mapped[float] = mapped_column(Float, nullable=False)
-    high_price: Mapped[float] = mapped_column(Float, nullable=False)
-    low_price: Mapped[float] = mapped_column(Float, nullable=False)
-    close_price: Mapped[float] = mapped_column(Float, nullable=False)
-    volume: Mapped[float] = mapped_column(Float, nullable=False)
-    technical_indicators: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+# データベース初期化
+def init_database():
+    """データベースを初期化"""
+    try:
+        # 接続確認
+        if not check_database_connection():
+            raise Exception("Database connection failed")
+        
+        # テーブル作成
+        create_tables()
+        
+        logger.info("Database initialization completed")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        raise
 
-
-class NewsSentiment(Base):
-    """ニュース・センチメント"""
-    __tablename__ = "news_sentiment"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    source: Mapped[str] = mapped_column(String(100), nullable=False)
-    title: Mapped[str] = mapped_column(String(500), nullable=False)
-    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sentiment_score: Mapped[float] = mapped_column(Float, nullable=False)
-    keywords: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    published_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    analyzed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-
-
-class PerformanceMetrics(Base):
-    """パフォーマンス指標"""
-    __tablename__ = "performance_metrics"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    period: Mapped[str] = mapped_column(String(20), nullable=False)  # daily, weekly, monthly
-    start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    total_return: Mapped[float] = mapped_column(Float, nullable=False)
-    sharpe_ratio: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    max_drawdown: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    win_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    profit_factor: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    total_trades: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    winning_trades: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-
-
-class SystemLog(Base):
-    """システムログ"""
-    __tablename__ = "system_logs"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    level: Mapped[str] = mapped_column(String(20), nullable=False)  # INFO, WARNING, ERROR, CRITICAL
-    module: Mapped[str] = mapped_column(String(100), nullable=False)
-    message: Mapped[str] = mapped_column(Text, nullable=False)
-    details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
-
-
-class ParameterOptimization(Base):
-    """パラメータ最適化履歴"""
-    __tablename__ = "parameter_optimization"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    bot_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    optimization_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    old_parameters: Mapped[dict] = mapped_column(JSON, nullable=False)
-    new_parameters: Mapped[dict] = mapped_column(JSON, nullable=False)
-    performance_improvement: Mapped[float] = mapped_column(Float, nullable=False)
-    backtest_results: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+if __name__ == "__main__":
+    # テスト実行
+    init_database()
