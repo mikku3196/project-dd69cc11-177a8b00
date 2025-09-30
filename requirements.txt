@@ -1,49 +1,23 @@
-# Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
+# Web Framework
+fastapi
+uvicorn[standard]
 
 # Database
-sqlalchemy==2.0.23
-alembic==1.13.1
-asyncpg==0.29.0
-aiosqlite==0.19.0
+sqlalchemy
+alembic
+psycopg2-binary  # PostgreSQL用
 
-# HTTP Client
-aiohttp==3.9.1
-httpx==0.25.2
-requests==2.31.0
+# API Communication
+requests
+aiohttp
 
-# Data Processing
-pandas==2.1.4
-numpy==1.25.2
-ta==0.10.2
+# Data Handling
+pandas
+numpy
 
 # Task Scheduling
-apscheduler==3.10.4
+apscheduler
 
-# API Integration
-google-generativeai==0.3.2
-ccxt==4.1.77
-
-# Monitoring & Logging
-discord.py==2.3.2
-python-telegram-bot==20.7
-structlog==23.2.0
-
-# Development & Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
-
-# Utilities
-python-dotenv==1.0.0
-pyyaml==6.0.1
-schedule==1.2.0
-
-# Additional Dependencies for New Features
-feedparser==6.0.12
-sgmllib3k==1.0.0
+# Configuration
+python-dotenv
+toml
